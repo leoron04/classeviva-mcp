@@ -1,0 +1,31 @@
+name = "classeviva-mcp"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+# KV per workers-oauth-provider (client registrati, grant, token).
+# Contiene solo hash dei token e "props" cifrate: le credenziali ClasseViva non sono leggibili.
+# Self-hosting: `npx wrangler kv namespace create OAUTH_KV` e sostituisci l'id sotto col tuo.
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+id = "e8711cb1c4354fdeb6cbecb82c79a41d"
+
+# Limite ai tentativi di login sulla pagina /authorize (per IP e per username): 5 al minuto.
+# namespace_id è un numero scelto da te, univoco nel tuo account.
+[[ratelimits]]
+name = "LOGIN_LIMITER"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }
+
+[vars]
+# Opzionale: URL pubblico canonico (per OAuth). Se vuoto usa l'host della richiesta.
+# PUBLIC_URL = "https://classeviva-mcp.<tuo-sottodominio>.workers.dev"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Segreti (NON metterli qui, usa `npx wrangler secret put NOME`):
+#   SUBJECT_KEY      consigliato: openssl rand -hex 32 (id utente pseudonimo nel KV)
+#   Modalità legacy single-user, opzionale e deprecata:
+#   CLASSEVIVA_USER, CLASSEVIVA_PASS, CLASSEVIVA_IDENT (opz.), MCP_SECRET

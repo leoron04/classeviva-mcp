@@ -1,0 +1,50 @@
+name: Segnalazione bug
+description: Qualcosa non funziona come previsto
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Grazie per la segnalazione. **Non** incollare password, token, URL legacy `/mcp/<secret>` né dati scolastici reali (voti, note, nomi di compagni). Usa il mock locale se puoi riprodurre.
+  - type: dropdown
+    id: where
+    attributes:
+      label: Dove succede?
+      options:
+        - Istanza pubblica (classeviva-mcp.ronchfx.workers.dev)
+        - Mia istanza self-hosted
+        - Solo in locale (wrangler dev + mock)
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client MCP
+      options:
+        - Claude (web)
+        - Claude (desktop / app)
+        - Altro client MCP
+        - Solo test/e2e
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Cosa aspettavi / cosa è successo
+      description: Passi minimi per riprodurre, senza dati personali.
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Ambiente
+      description: Versione Node, OS, eventuale commit/SHA, log non sensibili.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Controlli
+      options:
+        - label: Ho verificato che non sto incollando credenziali o dati personali
+          required: true
+        - label: Ho provato a scollegare e ricollegare il connettore (se applicabile)

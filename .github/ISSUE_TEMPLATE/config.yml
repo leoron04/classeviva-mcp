@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Segnalazione di sicurezza
+    url: https://github.com/leoron04/classeviva-mcp/security/advisories/new
+    about: Non aprire un issue pubblico — usa le Private Vulnerability Advisories.

@@ -1,0 +1,49 @@
+{
+  "name": "classeviva-mcp",
+  "version": "2.0.0",
+  "description": "Server MCP remoto (non ufficiale) per ClasseViva Spaggiari, multi-utente con OAuth, su Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc -p .",
+    "types": "wrangler types",
+    "test:e2e": "node test/e2e-oauth.mjs",
+    "test:local": "bash test/local.sh"
+  },
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "classeviva",
+    "spaggiari",
+    "claude",
+    "cloudflare-workers",
+    "oauth",
+    "parallax-studios",
+    "ronchfx"
+  ],
+  "author": "Leonardo Ronchi (RonchFX)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leoron04/classeviva-mcp.git"
+  },
+  "homepage": "https://github.com/leoron04/classeviva-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/leoron04/classeviva-mcp/issues"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261109.1",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.158.0"
+  }
+}

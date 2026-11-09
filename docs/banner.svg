@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-label="ClasseViva MCP">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1f4a"/>
+      <stop offset="55%" stop-color="#123a7a"/>
+      <stop offset="100%" stop-color="#1a5bb8"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#5b9dff" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#7eb6ff" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#5b9dff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="320" rx="28" fill="url(#bg)"/>
+  <rect x="40" y="150" width="1200" height="2" fill="url(#glow)"/>
+  <!-- graduation cap -->
+  <g transform="translate(120,96)" fill="none" stroke="#e8f0ff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 52 L64 28 L120 52 L64 76 Z"/>
+    <path d="M32 62 V88 C48 100 80 100 96 88 V62"/>
+    <path d="M120 52 V78"/>
+    <circle cx="120" cy="82" r="5" fill="#e8f0ff" stroke="none"/>
+  </g>
+  <!-- book -->
+  <g transform="translate(250,118)" fill="none" stroke="#a8c8ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 8 C28 4 44 4 56 8 V64 C44 58 28 58 8 62 Z"/>
+    <path d="M104 8 C84 4 68 4 56 8 V64 C68 58 84 58 104 62 Z"/>
+    <path d="M56 8 V64"/>
+  </g>
+  <text x="400" y="145" fill="#ffffff" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="64" font-weight="700">ClasseViva MCP</text>
+  <text x="400" y="195" fill="#b8d0ff" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="500">Registro Spaggiari → Claude, multi-utente con OAuth</text>
+  <text x="400" y="240" fill="#7aa2e8" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif" font-size="18">by RonchFX · Parallax Studios · MIT</text>
+</svg>
