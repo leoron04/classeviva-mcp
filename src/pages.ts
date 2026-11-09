@@ -87,6 +87,20 @@ export function errorPage(message: string, status = 400): Response {
 <p class="sub">Torna su Claude e riprova a collegare il connettore.</p></div>`), { status, headers: SECURITY_HEADERS });
 }
 
+const REPO = "https://github.com/leoron04/classeviva-mcp";
+
+/** Mostrata a chi prova ad accedere a un'istanza privata: spiega come crearsene una propria. */
+export function privatePage(): Response {
+  return new Response(layout("Istanza privata", `<div class="card"><h1>Questo server è personale</h1>
+<p>Questa copia di ClasseViva MCP è riservata al suo proprietario. Puoi crearne una tua in pochi minuti, gratis, sul tuo account Cloudflare: così i tuoi dati restano solo tuoi.</p>
+<ol>
+<li>Crea un account gratuito su <a href="https://dash.cloudflare.com/sign-up" rel="noopener">Cloudflare</a>.</li>
+<li>Segui la guida <a href="${REPO}#self-hosting" rel="noopener">Self-hosting</a> sul repository GitHub.</li>
+<li>In Claude aggiungi il connettore con l'indirizzo del tuo server (<code>https://classeviva-mcp.&lt;tuo-nome&gt;.workers.dev/mcp</code>).</li>
+</ol>
+<p class="sub"><a href="${REPO}" rel="noopener">github.com/leoron04/classeviva-mcp</a></p></div>`), { status: 403, headers: SECURITY_HEADERS });
+}
+
 export function homePage(origin: string): Response {
   const mcp = `${origin}/mcp`;
   return new Response(layout("ClasseViva MCP", `

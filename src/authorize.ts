@@ -2,7 +2,7 @@ import { AuthorizationError, CimdFetchError, type AuthRequest } from "@cloudflar
 import { ClasseVivaClient, ClasseVivaError } from "./classeviva.js";
 import { remember } from "./clients.js";
 import type { Env, GrantProps } from "./env.js";
-import { errorPage, loginPage, SECURITY_HEADERS } from "./pages.js";
+import { errorPage, loginPage, privatePage, SECURITY_HEADERS } from "./pages.js";
 
 export const SCOPE = "classeviva:read";
 
@@ -127,7 +127,7 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
     // Accesso riservato: se ALLOWED_USERS è impostato, solo quegli username possono entrare (Spaggiari non viene nemmeno contattato).
     const allowed = (env.ALLOWED_USERS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
     if (allowed.length && !allowed.includes(user.toLowerCase()))
-      return retry("Questa istanza è privata: l'accesso è riservato al proprietario. Puoi installarne una tua (vedi il README su GitHub).", 403);
+      return privatePage();
     if (identIn && !/^[A-Z]?\d+[A-Z]?$/.test(identIn)) return retry("Codice profilo non valido (es. S1234567X).");
     if (!(await allowAttempt(env, req, user)))
       return retry("Troppi tentativi di accesso. Aspetta un minuto e riprova.", 429);
