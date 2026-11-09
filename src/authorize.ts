@@ -101,7 +101,8 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
 
     // CSRF: oltre al "handle" legato al cookie __Host- (verificato da approveConsent), rifiuta POST cross-origin.
     const origin = req.headers.get("Origin");
-    if (origin && origin !== new URL(req.url).origin) return errorPage("Richiesta non valida (origine diversa).", 403);
+    // "null" arriva da alcuni browser (es. Safari iOS in sessione OAuth): la protezione vera è il cookie __Host-.
+    if (origin && origin !== "null" && origin !== new URL(req.url).origin) return errorPage("Richiesta non valida (origine diversa).", 403);
     const ctype = req.headers.get("content-type") ?? "";
     if (!ctype.includes("application/x-www-form-urlencoded") && !ctype.includes("multipart/form-data"))
       return errorPage("Richiesta non valida.", 400);
