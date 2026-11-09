@@ -11,6 +11,8 @@ export interface Env {
   PUBLIC_URL?: string;
   /** Segreto (>= 32 caratteri) per derivare un userId pseudonimo dall'username (HMAC). Opzionale ma consigliato. */
   SUBJECT_KEY?: string;
+  /** Elenco (separato da virgole) degli username ClasseViva ammessi. Se vuoto, l'istanza è aperta a tutti. */
+  ALLOWED_USERS?: string;
   /** Base URL alternativa dell'API Spaggiari (es. un proxy). */
   CLASSEVIVA_BASE_URL?: string;
 

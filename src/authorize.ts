@@ -124,6 +124,10 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
       renderLogin(env, approved.request, approved.headers, { error, user, ident: identIn }, status);
 
     if (!user || !pass) return retry("Inserisci codice utente e password.");
+    // Accesso riservato: se ALLOWED_USERS è impostato, solo quegli username possono entrare (Spaggiari non viene nemmeno contattato).
+    const allowed = (env.ALLOWED_USERS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (allowed.length && !allowed.includes(user.toLowerCase()))
+      return retry("Questa istanza è privata: l'accesso è riservato al proprietario. Puoi installarne una tua (vedi il README su GitHub).", 403);
     if (identIn && !/^[A-Z]?\d+[A-Z]?$/.test(identIn)) return retry("Codice profilo non valido (es. S1234567X).");
     if (!(await allowAttempt(env, req, user)))
       return retry("Troppi tentativi di accesso. Aspetta un minuto e riprova.", 429);

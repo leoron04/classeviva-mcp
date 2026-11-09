@@ -126,6 +126,7 @@ Il connettore sarà `https://classeviva-mcp.<tuo-sottodominio>.workers.dev/mcp`.
 | `OAUTH_KV` | KV (obbligatorio) | Client, grant e token OAuth (hash + props cifrate) |
 | `LOGIN_LIMITER` | Rate limit | 5 tentativi di login/min per IP e username |
 | `SUBJECT_KEY` | secret | ≥ 32 caratteri, pseudonimi utente |
+| `ALLOWED_USERS` | secret | opzionale: username ClasseViva ammessi, separati da virgola. Se impostato, l'istanza diventa privata |
 | `PUBLIC_URL` | var | URL pubblico canonico |
 | `CLASSEVIVA_BASE_URL` | var | API alternativa (es. mock locale) |
 | `CLASSEVIVA_USER` / `PASS` / `IDENT` / `MCP_SECRET` | secret (legacy) | Solo modalità single-user deprecata |

@@ -3,3 +3,6 @@
 CLASSEVIVA_BASE_URL=http://127.0.0.1:9999/rest/v1
 # Consigliato in produzione (wrangler secret put SUBJECT_KEY): openssl rand -hex 32
 # SUBJECT_KEY=
+
+# Istanza privata: solo questi username ClasseViva (separati da virgola) possono accedere.
+# ALLOWED_USERS=
