@@ -8,6 +8,7 @@ const data = {
     { evtDate: T, evtCode: "GRV0", subjectDesc: "MATEMATICA", displayValue: "7+", decimalValue: 7.25, color: "green", canceled: false, periodPos: 1, periodDesc: "Trimestre", teacherName: "BIANCHI", weightFactor: 1, notesForFamily: "" },
     { evtDate: T, evtCode: "GRV1", subjectDesc: "MATEMATICA", displayValue: "5", decimalValue: 5, color: "red", canceled: false, periodPos: 1, periodDesc: "Trimestre", teacherName: "BIANCHI", weightFactor: 1 },
     { evtDate: T, evtCode: "GRV1", subjectDesc: "LATINO", displayValue: "8", decimalValue: 8, color: "blue", canceled: false, periodPos: 1, periodDesc: "Trimestre", teacherName: "VERDI", weightFactor: 1 } ] },
+  homeworks: { items: [{ evtCode: "NEWDC", teacherName: "ROSSI", homeworkDesc: "Es. 1-5 p. 100", homeworkDone: false, assignmentDate: T, expiryDate: T, subjectDesc: "FISICA", teacherFiles: [], teacherLinks: [] }] },
   agenda: { agenda: [{ evtCode: "AGNT", evtDatetimeBegin: `${T}T09:00:00+01:00`, evtDatetimeEnd: `${T}T10:00:00+01:00`, isFullDay: false, notes: "Verifica equazioni", authorName: "BIANCHI", subjectDesc: "MATEMATICA" }] },
   lessons: { lessons: [{ evtDate: T, evtHPos: 1, evtDuration: 1, subjectDesc: "LATINO", authorName: "VERDI", lessonType: "Lezione", lessonArg: "Ablativo assoluto" }] },
   absences: { events: [{ evtDate: T, evtCode: "ABR0", evtHPos: 2, isJustified: false }] },

@@ -17,13 +17,23 @@ const wrap = <A>(fn: (a: A) => Promise<unknown>) => async (a: A) => {
 };
 
 const GRADE_KIND: Record<string, string> = { GRV0: "scritto", GRV1: "orale", GRV2: "pratico" };
-const AGENDA_KIND: Record<string, string> = { AGNT: "annotazione/verifica", AGHW: "compiti", AGCR: "attività di classe" };
+const AGENDA_KIND: Record<string, string> = { AGNT: "evento in agenda", AGHW: "compiti", AGCR: "attività di classe" };
 const ABSENCE_KIND: Record<string, string> = { ABA0: "assenza", ABR0: "ritardo", ABR1: "ritardo breve", ABU0: "uscita anticipata" };
 const NOTE_KIND: Record<string, string> = { NTTE: "annotazione del docente", NTCL: "nota disciplinare", NTWN: "richiamo", NTST: "sanzione disciplinare" };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const avg = (xs: number[]) => (xs.length ? round2(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
 const time = (dt?: string) => (dt ? dt.slice(11, 16) : undefined);
+
+async function fetchHomework(c: ClasseVivaClient) {
+  const { items } = await c.student<{ items: any[] }>("homeworks");
+  return (items ?? []).map((h) => ({
+    assegnato: h.assignmentDate, consegna: h.expiryDate ?? h.assignmentDate,
+    materia: h.subjectDesc || undefined, docente: h.teacherName, testo: h.homeworkDesc,
+    fatto: Boolean(h.homeworkDone || h.homeworkMarkedDone),
+    allegati: (h.teacherFiles?.length ?? 0) + (h.teacherLinks?.length ?? 0) || undefined,
+  })).sort((a, b) => String(a.consegna).localeCompare(String(b.consegna)));
+}
 
 export function registerTools(server: McpServer, getClient: () => ClasseVivaClient) {
   const ro = { readOnlyHint: true, openWorldHint: true } as const;
@@ -80,7 +90,7 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
 
   server.registerTool("get_agenda", {
     title: "Agenda (compiti e verifiche)",
-    description: "Compiti, verifiche e annotazioni in agenda in un intervallo di date. Default: da oggi ai prossimi 14 giorni. Accetta date future.",
+    description: "Eventi in agenda (verifiche, interrogazioni, attività) più i compiti in scadenza in un intervallo di date. Default: da oggi ai prossimi 14 giorni. Accetta date future.",
     inputSchema: {
       dal: dateArg.optional().describe("Data inizio YYYY-MM-DD (default oggi)"),
       al: dateArg.optional().describe("Data fine YYYY-MM-DD (default oggi + 14 giorni)"),
@@ -91,15 +101,39 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
     const to = al ?? addDays(from, 14);
     const { agenda } = await getClient().student<{ agenda: any[] }>(`agenda/all/${toApi(from)}/${toApi(to)}`);
     const items = [...agenda].sort((a, b) => String(a.evtDatetimeBegin).localeCompare(String(b.evtDatetimeBegin)));
+    const hw = (await fetchHomework(getClient())).filter((h) => h.consegna >= from && h.consegna <= to);
     return {
-      dal: from, al: to, totale: items.length,
+      dal: from, al: to, totale_eventi: items.length, totale_compiti: hw.length,
       eventi: items.map((e) => ({
         data: String(e.evtDatetimeBegin).slice(0, 10),
         ora: e.isFullDay ? "tutto il giorno" : `${time(e.evtDatetimeBegin)}-${time(e.evtDatetimeEnd)}`,
         tipo: AGENDA_KIND[e.evtCode] ?? e.evtCode, materia: e.subjectDesc || undefined,
         docente: e.authorName, testo: e.notes,
       })),
+      compiti_in_scadenza: hw,
+      nota: "I compiti assegnati dai docenti arrivano dalla sezione Compiti di ClasseViva (non dall'agenda), ordinati per data di consegna.",
     };
+  }));
+
+  server.registerTool("get_homework", {
+    title: "Compiti assegnati",
+    description: "Compiti assegnati dai docenti (sezione Compiti/Didattica di ClasseViva), filtrati per data di consegna. Default: consegna da oggi ai prossimi 14 giorni. Usa questo per sapere cosa c'è da fare.",
+    inputSchema: {
+      dal: dateArg.optional().describe("Consegna dal YYYY-MM-DD (default oggi)"),
+      al: dateArg.optional().describe("Consegna fino al YYYY-MM-DD (default oggi + 14 giorni)"),
+      materia: z.string().optional().describe("Filtro per nome materia (testo parziale)"),
+      includi_fatti: z.boolean().optional().describe("Includi anche quelli segnati come fatti (default true)"),
+    },
+    annotations: ro,
+  }, wrap(async ({ dal, al, materia, includi_fatti }) => {
+    const from = dal ?? todayRome();
+    const to = al ?? addDays(from, 14);
+    const m = materia?.toLowerCase();
+    const list = (await fetchHomework(getClient())).filter((h) =>
+      h.consegna >= from && h.consegna <= to &&
+      (!m || String(h.materia ?? "").toLowerCase().includes(m)) &&
+      (includi_fatti !== false || !h.fatto));
+    return { dal: from, al: to, totale: list.length, compiti: list };
   }));
 
   server.registerTool("get_lessons", {

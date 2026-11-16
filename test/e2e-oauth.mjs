@@ -88,8 +88,8 @@ async function mcp(accessToken, label) {
   await c.connect(new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${accessToken}` } } }));
   check(`${label}: initialize`, c.getServerVersion()?.name === "classeviva");
   const { tools } = await c.listTools();
-  check(`${label}: tools/list`, tools.length === 11, `${tools.length} tool`);
-  for (const name of ["get_profile", "get_grades"]) {
+  check(`${label}: tools/list`, tools.length === 12, `${tools.length} tool`);
+  for (const name of ["get_profile", "get_grades", "get_homework", "get_agenda"]) {
     const r = await c.callTool({ name, arguments: {} });
     const text = r.content?.[0]?.text ?? "";
     check(`${label}: ${name}`, !r.isError && text.length > 10, `${text.length} byte`);

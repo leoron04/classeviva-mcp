@@ -39,13 +39,14 @@ Preferisci la tua istanza? Vai a [Self-hosting](#self-hosting).
 
 ---
 
-## Funzionalità (11 tool, sola lettura)
+## Funzionalità (12 tool, sola lettura)
 
 | | Tool | Cosa fa |
 |---|---|---|
 | 👤 | `get_profile` | Nome, scuola, città — utile per verificare il login |
 | 📊 | `get_grades` | Voti con medie per materia e generale (`materia`, `periodo`, `ultimi`) |
-| 📅 | `get_agenda` | Compiti e verifiche tra `dal` e `al` (default: oggi → +14 gg) |
+| 📅 | `get_agenda` | Verifiche, eventi e compiti in scadenza tra `dal` e `al` (default: oggi → +14 gg) |
+| 📝 | `get_homework` | Compiti assegnati dai docenti, per data di consegna, filtrabili per materia |
 | 📖 | `get_lessons` | Argomenti delle lezioni (default: ultimi 7 giorni) |
 | 🚪 | `get_absences` | Assenze, ritardi, uscite + quante da giustificare |
 | 📢 | `get_noticeboard` | Circolari della bacheca (**non** le segna come lette) |
@@ -156,7 +157,7 @@ src/worker.ts       OAuthProvider (/authorize, /token, /register, /mcp) + legacy
 src/authorize.ts    login: CSRF, rate limit, verifica Spaggiari, grant
 src/pages.ts        HTML (login, home, errori)
 src/mcp.ts          server MCP (Streamable HTTP, stateless)
-src/tools.ts        gli 11 tool
+src/tools.ts        i 12 tool
 src/classeviva.ts   client API + rinnovo sessione
 src/clients.ts      cache in-memory delle sessioni
 src/legacy.ts       /mcp/<MCP_SECRET> (deprecato)
@@ -196,7 +197,7 @@ Segnalazioni di sicurezza: vedi [SECURITY.md](SECURITY.md). Contributi: [CONTRIB
 
 ## English
 
-**ClasseViva MCP** is an unofficial, open-source remote MCP server that connects the Italian school e-register **ClasseViva (Spaggiari)** to **Claude** (and other OAuth-capable MCP clients). Multi-user: each person signs in with their own credentials on an OAuth 2.1 (PKCE + dynamic client registration) login page. Credentials are **never stored in plaintext** — only inside the grant props, encrypted by `@cloudflare/workers-oauth-provider`. All **11 tools are read-only** (grades with averages, agenda, lessons, absences, noticeboard, notes, subjects, periods, teaching materials, calendar).
+**ClasseViva MCP** is an unofficial, open-source remote MCP server that connects the Italian school e-register **ClasseViva (Spaggiari)** to **Claude** (and other OAuth-capable MCP clients). Multi-user: each person signs in with their own credentials on an OAuth 2.1 (PKCE + dynamic client registration) login page. Credentials are **never stored in plaintext** — only inside the grant props, encrypted by `@cloudflare/workers-oauth-provider`. All **12 tools are read-only** (grades with averages, agenda, homework, lessons, absences, noticeboard, notes, subjects, periods, teaching materials, calendar).
 
 - **Quick start in Claude:** Settings → Connectors → Add custom connector → URL `https://classeviva-mcp.ronchfx.workers.dev/mcp`.
 - **Self-host:** free Cloudflare Workers plan — create `OAUTH_KV`, set `SUBJECT_KEY`, `wrangler deploy` (see above).
