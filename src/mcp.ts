@@ -3,7 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import type { ClasseVivaClient } from "./classeviva.js";
 import { registerTools } from "./tools.js";
 
-export const VERSION = "2.0.0";
+export const VERSION = "2.1.0";
 
 function buildServer(getClient: () => ClasseVivaClient): McpServer {
   const server = new McpServer(
@@ -11,7 +11,7 @@ function buildServer(getClient: () => ClasseVivaClient): McpServer {
     {
       instructions:
         "Accesso in sola lettura al registro elettronico ClasseViva (Spaggiari) dello studente: voti, agenda (compiti e verifiche), " +
-        "argomenti delle lezioni, assenze, bacheca, note, materie, periodi, didattica, calendario. Date in formato YYYY-MM-DD, fuso Europe/Rome. " +
+        "argomenti delle lezioni, assenze, bacheca, note, materie, periodi, didattica, calendario, e lettura dei file allegati (get_file: didattica, circolari, compiti). Date in formato YYYY-MM-DD, fuso Europe/Rome. " +
         "ClasseViva fornisce solo l'anno scolastico in corso.",
     },
   );

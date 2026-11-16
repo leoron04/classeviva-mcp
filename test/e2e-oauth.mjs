@@ -88,11 +88,34 @@ async function mcp(accessToken, label) {
   await c.connect(new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${accessToken}` } } }));
   check(`${label}: initialize`, c.getServerVersion()?.name === "classeviva");
   const { tools } = await c.listTools();
-  check(`${label}: tools/list`, tools.length === 12, `${tools.length} tool`);
+  check(`${label}: tools/list`, tools.length === 13, `${tools.length} tool`);
   for (const name of ["get_profile", "get_grades", "get_homework", "get_agenda"]) {
     const r = await c.callTool({ name, arguments: {} });
     const text = r.content?.[0]?.text ?? "";
     check(`${label}: ${name}`, !r.isError && text.length > 10, `${text.length} byte`);
+  }
+  // get_file: in locale (mock) prova i quattro casi; contro un deploy reale solo se E2E_FILES=1 e sono date le coordinate
+  if (process.env.E2E_MOCK_FILES) {
+    const cases = [
+      ["didattica PDF", { tipo: "didattica", id: "501" }, (j) => j.tipo === "PDF" && j.pagine_totali === 2 && /--- Pagina 2 ---\nEsercizio due/.test(j.contenuto)],
+      ["didattica PDF pagina 2", { tipo: "didattica", id: "501", pagina: 2 }, (j) => j.da_pagina === 2 && !/Pagina 1/.test(j.contenuto)],
+      ["didattica link Google", { tipo: "didattica", id: "502" }, (j) => j.link?.startsWith("https://docs.google.com/") && /Google/.test(j.nota)],
+      ["bacheca docx", { tipo: "bacheca", id: "CF/1", allegato: 1 }, (j) => j.nome === "circ12.docx" && j.contenuto === "Sciopero del 20 novembre & uscita\nSeconda riga"],
+      ["compito txt", { tipo: "compito", id: "NEWDC/125021", allegato: "77" }, (j) => /Traccia/.test(j.contenuto)],
+    ];
+    for (const [name, args, test] of cases) {
+      const r = await c.callTool({ name: "get_file", arguments: args });
+      let j; try { j = JSON.parse(r.content?.[0]?.text ?? ""); } catch { j = {}; }
+      check(`${label}: get_file ${name}`, !r.isError && test(j), r.isError ? r.content?.[0]?.text : "");
+    }
+    const miss = await c.callTool({ name: "get_file", arguments: { tipo: "bacheca", id: "CF/1", allegato: 9 } });
+    check(`${label}: get_file allegato inesistente -> errore in italiano`, miss.isError && /File non trovato/.test(miss.content?.[0]?.text ?? ""));
+    const bad = await c.callTool({ name: "get_file", arguments: { tipo: "bacheca", id: "../x" } });
+    check(`${label}: get_file id non valido rifiutato`, bad.isError && /CODICE\/NUMERO/.test(bad.content?.[0]?.text ?? ""));
+    const did = JSON.parse((await c.callTool({ name: "get_didactics", arguments: {} })).content[0].text);
+    check(`${label}: get_didactics espone id`, did[0]?.cartelle?.[0]?.contenuti?.[0]?.id === 501);
+    const hw = JSON.parse((await c.callTool({ name: "get_homework", arguments: {} })).content[0].text);
+    check(`${label}: get_homework espone id e file`, hw.compiti?.[0]?.id === "NEWDC/125021" && hw.compiti[0].file?.[0]?.id === 77);
   }
   await c.close();
 }

@@ -130,9 +130,61 @@ export class ClasseVivaClient {
     return (await res.json()) as T;
   }
 
+  /**
+   * Download di un file (allegato, materiale). `path` è relativo a /students/{id}/.
+   * Legge al massimo `maxBytes` byte; il nome arriva da Content-Disposition se presente.
+   */
+  async studentFile(path: string, maxBytes: number): Promise<{ bytes: Uint8Array; contentType: string; fileName?: string }> {
+    let s = await this.ensureSession();
+    const call = (sess: Session) =>
+      this.fetchT(`${this.base}/students/${sess.studentId}/${path}`, {
+        headers: { ...API_HEADERS, "Z-Auth-Token": sess.token },
+      });
+    let res = await call(s);
+    if (res.status === 401) {
+      this.session = undefined;
+      s = await this.ensureSession();
+      res = await call(s);
+    }
+    if (!res.ok) {
+      const err = await toError(res);
+      if (res.status === 404) throw new ClasseVivaError(`File non trovato su ClasseViva (controlla id e numero allegato). ${err.message}`, 404, err.apiError);
+      throw err;
+    }
+    const tooBig = () => new ClasseVivaError(`Il file è troppo grande da leggere qui (limite ${Math.round(maxBytes / 1048576)} MB). Aprilo da ClasseViva.`, 413);
+    const len = Number(res.headers.get("content-length") || 0);
+    if (len > maxBytes) { void res.body?.cancel(); throw tooBig(); }
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = res.body?.getReader();
+    if (reader) {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > maxBytes) { void reader.cancel(); throw tooBig(); }
+        chunks.push(value);
+      }
+    }
+    const bytes = new Uint8Array(total);
+    let off = 0;
+    for (const ch of chunks) { bytes.set(ch, off); off += ch.byteLength; }
+    return { bytes, contentType: res.headers.get("content-type") || "", fileName: fileNameFrom(res.headers.get("content-disposition")) };
+  }
+
   get studentInfo() {
     return this.session;
   }
+}
+
+/** filename da Content-Disposition (anche nella forma filename*=UTF-8''...). */
+export function fileNameFrom(cd: string | null): string | undefined {
+  if (!cd) return undefined;
+  const star = cd.match(/filename\*\s*=\s*(?:UTF-8|utf-8)?''([^;]+)/);
+  if (star) { try { return decodeURIComponent(star[1].trim().replace(/^"|"$/g, "")); } catch { /* ignora */ } }
+  const m = cd.match(/filename\s*=\s*("([^"]*)"|[^;]+)/i);
+  const v = (m?.[2] ?? m?.[1])?.trim();
+  return v || undefined;
 }
 
 async function safeJson(res: Response): Promise<any> {

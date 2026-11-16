@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ClasseVivaClient, ClasseVivaError } from "./classeviva.js";
+import { DEFAULT_MAX_CHARS, HARD_MAX_CHARS, readClasseVivaFile } from "./files.js";
 import { addDays, isIsoDate, maxDate, minDate, schoolYearStart, toApi, todayRome } from "./dates.js";
 
 const dateArg = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data: YYYY-MM-DD");
@@ -19,6 +20,7 @@ const wrap = <A>(fn: (a: A) => Promise<unknown>) => async (a: A) => {
 const GRADE_KIND: Record<string, string> = { GRV0: "scritto", GRV1: "orale", GRV2: "pratico" };
 const AGENDA_KIND: Record<string, string> = { AGNT: "evento in agenda", AGHW: "compiti", AGCR: "attività di classe" };
 const ABSENCE_KIND: Record<string, string> = { ABA0: "assenza", ABR0: "ritardo", ABR1: "ritardo breve", ABU0: "uscita anticipata" };
+const DIDACTIC_KIND: Record<string, string> = { file: "file", link: "link", text: "testo" };
 const NOTE_KIND: Record<string, string> = { NTTE: "annotazione del docente", NTCL: "nota disciplinare", NTWN: "richiamo", NTST: "sanzione disciplinare" };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -31,7 +33,11 @@ async function fetchHomework(c: ClasseVivaClient) {
     assegnato: h.assignmentDate, consegna: h.expiryDate ?? h.assignmentDate,
     materia: h.subjectDesc || undefined, docente: h.teacherName, testo: h.homeworkDesc,
     fatto: Boolean(h.homeworkDone || h.homeworkMarkedDone),
-    allegati: (h.teacherFiles?.length ?? 0) + (h.teacherLinks?.length ?? 0) || undefined,
+    id: h.evtCode && h.evtId != null ? `${h.evtCode}/${h.evtId}` : undefined,
+    file: h.teacherFiles?.length ? h.teacherFiles.map((f: any) => ({
+      nome: f.fileName ?? f.name ?? f.filename ?? f.title, id: f.fileId ?? f.id ?? f.attachId,
+    })) : undefined,
+    link: h.teacherLinks?.length ? h.teacherLinks.map((l: any) => (typeof l === "string" ? l : l.link ?? l.url ?? l.href ?? l)) : undefined,
   })).sort((a, b) => String(a.consegna).localeCompare(String(b.consegna)));
 }
 
@@ -117,7 +123,7 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
 
   server.registerTool("get_homework", {
     title: "Compiti assegnati",
-    description: "Compiti assegnati dai docenti (sezione Compiti/Didattica di ClasseViva), filtrati per data di consegna. Default: consegna da oggi ai prossimi 14 giorni. Usa questo per sapere cosa c'è da fare.",
+    description: "Compiti assegnati dai docenti (sezione Compiti/Didattica di ClasseViva), filtrati per data di consegna. Default: consegna da oggi ai prossimi 14 giorni. Usa questo per sapere cosa c'è da fare. Se un compito ha `file`, leggili con get_file (tipo 'compito', id del compito, allegato = id del file).",
     inputSchema: {
       dal: dateArg.optional().describe("Consegna dal YYYY-MM-DD (default oggi)"),
       al: dateArg.optional().describe("Consegna fino al YYYY-MM-DD (default oggi + 14 giorni)"),
@@ -189,7 +195,7 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
 
   server.registerTool("get_noticeboard", {
     title: "Bacheca (circolari)",
-    description: "Circolari e comunicazioni della bacheca, dalla più recente. Sola lettura: non segna nulla come letto.",
+    description: "Circolari e comunicazioni della bacheca, dalla più recente. Sola lettura: non segna nulla come letto. Per leggere un allegato usa get_file con tipo 'bacheca', id della circolare e numero dell'allegato.",
     inputSchema: {
       limite: z.number().int().positive().max(200).optional().describe("Numero massimo (default 30)"),
       solo_non_lette: z.boolean().optional(),
@@ -208,7 +214,7 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
       circolari: list.map((i) => ({
         pubblicata: String(i.pubDT).slice(0, 10), titolo: i.cntTitle, categoria: i.cntCategory,
         letta: !!i.readStatus, valida_fino: i.cntValidTo,
-        allegati: (i.attachments ?? []).map((a: any) => a.fileName),
+        allegati: (i.attachments ?? []).map((a: any) => ({ nome: a.fileName, numero: a.attachNum })),
         richiede_adesione: i.needJoin || undefined, richiede_risposta: i.needReply || undefined,
         id: `${i.evtCode}/${i.pubId}`,
       })),
@@ -254,7 +260,7 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
 
   server.registerTool("get_didactics", {
     title: "Didattica (materiali dei docenti)",
-    description: "Materiali condivisi dai docenti nella sezione Didattica, per docente e cartella.",
+    description: "Materiali condivisi dai docenti nella sezione Didattica, per docente e cartella. Per leggerne il contenuto usa get_file con tipo 'didattica' e l'`id` del contenuto.",
     inputSchema: {}, annotations: ro,
   }, wrap(async () => {
     const data = await getClient().student<any>("didactics");
@@ -263,10 +269,32 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
       docente: t.teacherName,
       cartelle: (t.folders ?? []).map((f: any) => ({
         cartella: f.folderName, ultima_condivisione: f.lastShareDT,
-        contenuti: (f.contents ?? []).map((c: any) => ({ nome: c.contentName, tipo: c.objectType, condiviso: c.shareDT })),
+        contenuti: (f.contents ?? []).map((c: any) => ({
+          id: c.contentId, nome: c.contentName || "(senza titolo: il nome del file arriva con get_file)",
+          tipo: DIDACTIC_KIND[c.objectType] ?? c.objectType, condiviso: c.shareDT,
+        })),
       })),
     }));
   }));
+
+  server.registerTool("get_file", {
+    title: "Leggi un file di ClasseViva",
+    description:
+      "Legge il contenuto di un file allegato su ClasseViva: materiali della Didattica (tipo 'didattica', id da get_didactics), " +
+      "allegati delle circolari in Bacheca (tipo 'bacheca', id CODICE/NUMERO da get_noticeboard + numero dell'allegato) e file dei docenti nei Compiti " +
+      "(tipo 'compito', id da get_homework + id del file). Legge PDF con testo (pagina per pagina), Word .docx, PowerPoint .pptx, OpenDocument e file di testo; " +
+      "per i link restituisce l'URL. I testi lunghi sono divisi: per i PDF usa `pagina` per continuare, per gli altri `offset`. " +
+      "Immagini, vecchi .doc/.ppt, Excel e PDF scansionati non sono leggibili (restituisce nome e tipo). Limite 20 MB.",
+    inputSchema: {
+      tipo: z.enum(["didattica", "bacheca", "compito"]).describe("Da dove viene il file"),
+      id: z.string().min(1).describe("didattica: id del contenuto (es. 58386084); bacheca: id della circolare (es. CF/123456); compito: id del compito (es. NEWDC/125021)"),
+      allegato: z.union([z.string(), z.number()]).optional().describe("bacheca: numero dell'allegato (default 1); compito: id del file del docente"),
+      pagina: z.number().int().positive().optional().describe("Solo PDF: pagina da cui iniziare (default 1)"),
+      offset: z.number().int().min(0).optional().describe("Documenti e testi: carattere da cui iniziare (default 0)"),
+      max_caratteri: z.number().int().min(1000).max(HARD_MAX_CHARS).optional().describe(`Massimo di caratteri restituiti (default ${DEFAULT_MAX_CHARS})`),
+    },
+    annotations: ro,
+  }, wrap(async (args) => readClasseVivaFile(getClient(), args)));
 
   server.registerTool("get_calendar", {
     title: "Calendario scolastico",
