@@ -16,11 +16,8 @@ export interface Env {
   /** Base URL alternativa dell'API Spaggiari (es. un proxy). */
   CLASSEVIVA_BASE_URL?: string;
 
-  // --- Modalità legacy single-user (opzionale, deprecata) ---
-  CLASSEVIVA_USER?: string;
-  CLASSEVIVA_PASS?: string;
-  CLASSEVIVA_IDENT?: string;
-  MCP_SECRET?: string;
+  /** Allowlist opzionale dei redirect_uri OAuth (vedi redirects.ts). */
+  ALLOWED_REDIRECTS?: string;
 }
 
 /** Ciò che viene salvato (cifrato) dentro il grant OAuth. Visibile solo a chi possiede il token. */

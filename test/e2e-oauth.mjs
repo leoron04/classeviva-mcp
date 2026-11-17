@@ -1,5 +1,5 @@
 // Test end-to-end del flusso OAuth (DCR + PKCE) contro un deploy reale.
-// Uso: CLASSEVIVA_USER=... CLASSEVIVA_PASS=... node test/e2e-oauth.mjs [https://tuo-worker.workers.dev]
+// Uso: CLASSEVIVA_USER=... CLASSEVIVA_PASS=... [E2E_EXPECT_REDIRECT_ALLOWLIST=1] node test/e2e-oauth.mjs [https://tuo-worker.workers.dev]
 // Non stampa credenziali, token né dati personali: solo esiti e dimensioni.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -34,6 +34,13 @@ const reg = await fetch(asm.registration_endpoint, {
 });
 const client = await reg.json();
 check("DCR con redirect claude.ai + claude.com", reg.status === 201 && !!client.client_id, `status=${reg.status}`);
+// Allowlist redirect_uri (ALLOWED_REDIRECTS): se attiva un redirect estraneo va rifiutato. E2E_EXPECT_REDIRECT_ALLOWLIST=1 la rende obbligatoria.
+{
+  const evil = await fetch(asm.registration_endpoint, { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ client_name: "evil", redirect_uris: ["https://attacker.example/cb"], token_endpoint_auth_method: "none" }) });
+  if (evil.status === 400 || process.env.E2E_EXPECT_REDIRECT_ALLOWLIST) check("redirect_uri estraneo rifiutato (ALLOWED_REDIRECTS)", evil.status === 400, `status=${evil.status}`);
+  else console.log(`  (ALLOWED_REDIRECTS non impostato: redirect estranei accettati, status=${evil.status})`);
+}
 
 // 3. /authorize GET
 const verifier = b64url(randomBytes(32));

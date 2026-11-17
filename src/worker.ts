@@ -2,15 +2,17 @@ import { OAuthProvider } from "@cloudflare/workers-oauth-provider";
 import { handleAuthorize, SCOPE } from "./authorize.js";
 import { clientFor } from "./clients.js";
 import type { Env, GrantProps } from "./env.js";
-import { handleLegacy, LEGACY_PATH } from "./legacy.js";
 import { handleMcp, VERSION } from "./mcp.js";
 import { homePage } from "./pages.js";
+import { checkRegistration, userAllowed } from "./redirects.js";
 
 /** Endpoint MCP protetto da OAuth: ogni utente vede solo il proprio registro (credenziali nelle props cifrate del token). */
 const mcpApi = {
   async fetch(req: Request, env: Env, ctx: ExecutionContext & { props?: unknown }): Promise<Response> {
     const p = ctx.props as GrantProps | undefined;
     if (!p?.u || !p?.p) return new Response(JSON.stringify({ error: "invalid_token" }), { status: 401 });
+    // ALLOWED_USERS vale anche per i token già emessi (es. se l'elenco cambia dopo il login)
+    if (!userAllowed(env, p.u)) return Response.json({ error: "access_denied", error_description: "utente non ammesso su questa istanza" }, { status: 403 });
     const client = await clientFor({ user: p.u, pass: p.p, ident: p.i, baseUrl: env.CLASSEVIVA_BASE_URL || undefined });
     return handleMcp(req, () => client);
   },
@@ -68,10 +70,10 @@ function providerFor(origin: string): OAuthProvider<Env> {
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
-    // Legacy single-user /mcp/<MCP_SECRET> (deprecato): gestito prima del provider OAuth,
-    // che altrimenti tratterebbe /mcp/* come risorsa protetta.
-    const m = url.pathname.match(LEGACY_PATH);
-    if (m) return handleLegacy(req, env, m[1]);
+    if (url.pathname === "/register" && req.method === "POST") {
+      const bad = await checkRegistration(req, env);
+      if (bad) return bad;
+    }
     return providerFor(publicOrigin(env, req)).fetch(req, env, ctx);
   },
 };

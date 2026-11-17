@@ -3,6 +3,7 @@ import { ClasseVivaClient, ClasseVivaError } from "./classeviva.js";
 import { remember } from "./clients.js";
 import type { Env, GrantProps } from "./env.js";
 import { errorPage, loginPage, privatePage, SECURITY_HEADERS } from "./pages.js";
+import { redirectAllowed, userAllowed } from "./redirects.js";
 
 export const SCOPE = "classeviva:read";
 
@@ -95,6 +96,8 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
   try {
     if (req.method === "GET") {
       const authReq = await oauth.parseAuthRequest(req);
+      // copre anche i client CIMD (client_id = URL), che non passano da /register
+      if (!redirectAllowed(env, authReq.redirectUri)) return errorPage("Questa app non è autorizzata a collegarsi a questa istanza.", 403);
       return await renderLogin(env, authReq, undefined, {});
     }
     if (req.method !== "POST") return new Response("Method Not Allowed", { status: 405, headers: { Allow: "GET, POST" } });
@@ -120,14 +123,13 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
 
     // Consuma il handle (CSRF + binding al browser). In caso di errore ne apriamo uno nuovo.
     const approved = await oauth.approveConsent(req, handle, { scope: [SCOPE] });
+    if (!redirectAllowed(env, approved.request.redirectUri)) return errorPage("Questa app non è autorizzata a collegarsi a questa istanza.", 403);
     const retry = (error: string, status = 200) =>
       renderLogin(env, approved.request, approved.headers, { error, user, ident: identIn }, status);
 
     if (!user || !pass) return retry("Inserisci codice utente e password.");
     // Accesso riservato: se ALLOWED_USERS è impostato, solo quegli username possono entrare (Spaggiari non viene nemmeno contattato).
-    const allowed = (env.ALLOWED_USERS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-    if (allowed.length && !allowed.includes(user.toLowerCase()))
-      return privatePage();
+    if (!userAllowed(env, user)) return privatePage();
     if (identIn && !/^[A-Z]?\d+[A-Z]?$/.test(identIn)) return retry("Codice profilo non valido (es. S1234567X).");
     if (!(await allowAttempt(env, req, user)))
       return retry("Troppi tentativi di accesso. Aspetta un minuto e riprova.", 429);

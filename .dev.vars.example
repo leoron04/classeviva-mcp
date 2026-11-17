@@ -6,3 +6,6 @@ CLASSEVIVA_BASE_URL=http://127.0.0.1:9999/rest/v1
 
 # Istanza privata: solo questi username ClasseViva (separati da virgola) possono accedere.
 # ALLOWED_USERS=
+
+# Solo queste app (redirect_uri OAuth) possono collegarsi; il loopback è sempre ammesso.
+ALLOWED_REDIRECTS=https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback

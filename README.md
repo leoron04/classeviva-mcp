@@ -133,11 +133,9 @@ Il connettore sarà `https://classeviva-mcp.<tuo-sottodominio>.workers.dev/mcp`.
 | `ALLOWED_USERS` | secret | opzionale: username ClasseViva ammessi, separati da virgola. Se impostato, l'istanza diventa privata |
 | `PUBLIC_URL` | var | URL pubblico canonico |
 | `CLASSEVIVA_BASE_URL` | var | API alternativa (es. mock locale) |
-| `CLASSEVIVA_USER` / `PASS` / `IDENT` / `MCP_SECRET` | secret (legacy) | Solo modalità single-user deprecata |
+| `ALLOWED_REDIRECTS` | secret/var | opzionale ma consigliato: `redirect_uri` OAuth ammessi (URL esatti o prefissi che finiscono con `/`, separati da virgola), es. `https://claude.ai/api/mcp/auth_callback,https://claude.com/api/mcp/auth_callback`. Il loopback (`localhost`) è sempre ammesso. Blocca il phishing con app OAuth estranee |
 
-### Modalità legacy (deprecata)
-
-La v1 esponeva `/mcp/<MCP_SECRET>` con un solo utente nei secret del Worker. Resta disponibile se imposti tutti i secret legacy, altrimenti risponde 404. Preferisci OAuth: verrà rimossa.
+La vecchia modalità single-user `/mcp/<MCP_SECRET>` è stata rimossa: usa `/mcp` con OAuth. Se l'avevi configurata, elimina i secret `MCP_SECRET` e `CLASSEVIVA_PASS` dal Worker (`npx wrangler secret delete …`).
 
 ---
 
@@ -156,7 +154,7 @@ CLASSEVIVA_USER=S1234567X CLASSEVIVA_PASS=prova npm run test:e2e -- http://local
 ### Struttura
 
 ```
-src/worker.ts       OAuthProvider (/authorize, /token, /register, /mcp) + legacy
+src/worker.ts       OAuthProvider (/authorize, /token, /register, /mcp)
 src/authorize.ts    login: CSRF, rate limit, verifica Spaggiari, grant
 src/pages.ts        HTML (login, home, errori)
 src/mcp.ts          server MCP (Streamable HTTP, stateless)
@@ -164,7 +162,7 @@ src/tools.ts        i 13 tool
 src/files.ts        get_file: download, PDF (unpdf), docx/pptx/odt, testo
 src/classeviva.ts   client API + rinnovo sessione
 src/clients.ts      cache in-memory delle sessioni
-src/legacy.ts       /mcp/<MCP_SECRET> (deprecato)
+src/redirects.ts    allowlist redirect_uri e utenti
 ```
 
 ---

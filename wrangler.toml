@@ -27,5 +27,5 @@ head_sampling_rate = 1
 
 # Segreti (NON metterli qui, usa `npx wrangler secret put NOME`):
 #   SUBJECT_KEY      consigliato: openssl rand -hex 32 (id utente pseudonimo nel KV)
-#   Modalità legacy single-user, opzionale e deprecata:
-#   CLASSEVIVA_USER, CLASSEVIVA_PASS, CLASSEVIVA_IDENT (opz.), MCP_SECRET
+#   ALLOWED_USERS     opzionale: istanza privata (username ClasseViva ammessi)
+#   ALLOWED_REDIRECTS consigliato: redirect_uri OAuth ammessi (es. callback di Claude)
