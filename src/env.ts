@@ -16,6 +16,10 @@ export interface Env {
   /** Base URL alternativa dell'API Spaggiari (es. un proxy). */
   CLASSEVIVA_BASE_URL?: string;
 
+  /** Predefiniti per get_absence_hours (opzionali; il tool li accetta anche come parametri). */
+  ORE_SETTIMANALI?: string;
+  MONTE_ORE_ANNUO?: string;
+  LIMITE_ASSENZE_PERCENT?: string;
   /** Allowlist opzionale dei redirect_uri OAuth (vedi redirects.ts). */
   ALLOWED_REDIRECTS?: string;
 }

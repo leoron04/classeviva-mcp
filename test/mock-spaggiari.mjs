@@ -12,7 +12,7 @@ const data = {
   homeworks: { items: [{ evtCode: "NEWDC", teacherName: "ROSSI", evtId: 125021, homeworkDesc: "Es. 1-5 p. 100", homeworkDone: false, assignmentDate: T, expiryDate: T, subjectDesc: "FISICA", teacherFiles: [{ fileId: 77, fileName: "traccia.txt" }], teacherLinks: [] }] },
   agenda: { agenda: [{ evtCode: "AGNT", evtDatetimeBegin: `${T}T09:00:00+01:00`, evtDatetimeEnd: `${T}T10:00:00+01:00`, isFullDay: false, notes: "Verifica equazioni", authorName: "BIANCHI", subjectDesc: "MATEMATICA" }] },
   lessons: { lessons: [{ evtDate: T, evtHPos: 1, evtDuration: 1, subjectDesc: "LATINO", authorName: "VERDI", lessonType: "Lezione", lessonArg: "Ablativo assoluto" }] },
-  absences: { events: [{ evtDate: T, evtCode: "ABR0", evtHPos: 2, isJustified: false }] },
+  absences: { events: [{ evtDate: T, evtCode: "ABR0", evtHPos: 1, evtValue: 2, isJustified: false }, { evtDate: T, evtCode: "ABA0", isJustified: true }, { evtDate: T, evtCode: "ABU0", evtHPos: 5, evtValue: 1, isJustified: true }] },
   noticeboard: { items: [{ pubDT: `${T}T08:00:00+01:00`, cntTitle: "Circ. 12 - Sciopero", cntCategory: "Circolari", readStatus: false, attachments: [{ fileName: "circ12.docx", attachNum: 1 }], evtCode: "CF", pubId: 1 }] },
   notes: { NTTE: [], NTCL: [{ evtDate: T, authorName: "NERI", evtText: "Disturba la lezione", readStatus: true }], NTWN: [], NTST: [] },
   subjects: { subjects: [{ id: 1, description: "MATEMATICA", teachers: [{ teacherName: "BIANCHI" }] }] },

@@ -154,6 +154,8 @@ export async function handleAuthorize(req: Request, env: Env): Promise<Response>
     if (identIn && ident.replace(/\D/g, "") !== identIn.replace(/\D/g, ""))
       return retry("Il codice profilo indicato non appartiene a questo account.");
 
+    // login riuscito: azzera il contatore dei tentativi falliti di questo account
+    await env.OAUTH_KV.delete(await failKey(env, user)).catch(() => undefined);
     const props: GrantProps = { v: 1, u: user, p: pass, i: ident };
     await remember({ user, pass, ident, baseUrl: creds.baseUrl }, client);
 

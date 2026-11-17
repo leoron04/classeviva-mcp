@@ -78,8 +78,9 @@ check("password errata: errore in pagina", bad.status === 200 && /Credenziali Cl
 const ok = await post(handleFrom(badHtml), cookiesFrom(bad), { username: USER, password: PASS });
 const loc = ok.headers.get("location") ?? "";
 const cb = loc ? new URL(loc) : undefined;
+const okErr = ok.status === 302 ? "" : ((await ok.text()).match(/class="err"[^>]*>([^<]*)/)?.[1] ?? "");
 check("login corretto: 302 verso claude.ai con code+state", ok.status === 302 && cb?.origin === "https://claude.ai" && !!cb.searchParams.get("code") && cb.searchParams.get("state") === state,
-  `status=${ok.status}`);
+  `status=${ok.status}${okErr ? ` — ${okErr}` : ""}`);
 
 // 6. Token (PKCE)
 const tokRes = await fetch(asm.token_endpoint, {
@@ -95,11 +96,18 @@ async function mcp(accessToken, label) {
   await c.connect(new StreamableHTTPClientTransport(new URL(`${BASE}/mcp`), { requestInit: { headers: { Authorization: `Bearer ${accessToken}` } } }));
   check(`${label}: initialize`, c.getServerVersion()?.name === "classeviva");
   const { tools } = await c.listTools();
-  check(`${label}: tools/list`, tools.length === 13, `${tools.length} tool`);
+  check(`${label}: tools/list`, tools.length === 14, `${tools.length} tool`);
   for (const name of ["get_profile", "get_grades", "get_homework", "get_agenda"]) {
     const r = await c.callTool({ name, arguments: {} });
     const text = r.content?.[0]?.text ?? "";
     check(`${label}: ${name}`, !r.isError && text.length > 10, `${text.length} byte`);
+  }
+  {
+    const r = await c.callTool({ name: "get_absence_hours", arguments: {} });
+    let j = {}; try { j = JSON.parse(r.content?.[0]?.text ?? "{}"); } catch { /* */ }
+    // niente dati personali in output: solo la forma della risposta
+    check(`${label}: get_absence_hours`, !r.isError && typeof j.ore_assenza === "number" && "limite_ore" in j && !!j.dettaglio,
+      `monte_ore=${j.monte_ore_annuo ? "ok" : "?"} stato=${j.stato ? "ok" : "?"}`);
   }
   // get_file: in locale (mock) prova i quattro casi; contro un deploy reale solo se E2E_FILES=1 e sono date le coordinate
   if (process.env.E2E_MOCK_FILES) {

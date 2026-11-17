@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ClasseVivaClient, ClasseVivaError } from "./classeviva.js";
 import { DEFAULT_MAX_CHARS, HARD_MAX_CHARS, readClasseVivaFile } from "./files.js";
+import { computeAttendance } from "./attendance.js";
 import { addDays, isIsoDate, maxDate, minDate, schoolYearStart, toApi, todayRome } from "./dates.js";
 
 const dateArg = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato data: YYYY-MM-DD");
@@ -41,7 +42,9 @@ async function fetchHomework(c: ClasseVivaClient) {
   })).sort((a, b) => String(a.consegna).localeCompare(String(b.consegna)));
 }
 
-export function registerTools(server: McpServer, getClient: () => ClasseVivaClient) {
+export interface ToolDefaults { oreSettimanali?: number; monteOre?: number; percentuale?: number }
+
+export function registerTools(server: McpServer, getClient: () => ClasseVivaClient, defaults: ToolDefaults = {}) {
   const ro = { readOnlyHint: true, openWorldHint: true } as const;
 
   server.registerTool("get_profile", {
@@ -190,6 +193,41 @@ export function registerTools(server: McpServer, getClient: () => ClasseVivaClie
         data: e.evtDate, tipo: ABSENCE_KIND[e.evtCode] ?? e.evtCode, ora: e.evtHPos ?? undefined,
         giustificata: !!e.isJustified, motivo: e.justifReasonDesc || undefined,
       })),
+    };
+  }));
+
+  server.registerTool("get_absence_hours", {
+    title: "Ore di assenza e limite annuale",
+    description: "Conta le ore di assenza dell'anno (assenze giornaliere, ritardi, uscite anticipate) e le confronta con il limite per la validità dell'anno " +
+      "(predefinito: 25% del monte ore annuo = ore settimanali × 33). Le ore settimanali, se non indicate, sono stimate dalle lezioni registrate. " +
+      "Include ore ancora disponibili e proiezione a fine anno. È una STIMA: deroghe (salute, sport, ecc.) e il conteggio ufficiale li decide la scuola.",
+    inputSchema: {
+      ore_settimanali: z.number().min(1).max(60).optional().describe("Ore di lezione a settimana (es. 27, 30, 31)"),
+      monte_ore: z.number().min(10).max(2000).optional().describe("Monte ore annuo, se lo conosci (sostituisce ore_settimanali × 33)"),
+      percentuale_limite: z.number().min(1).max(100).optional().describe("Percentuale massima di assenze (default 25)"),
+    },
+    annotations: ro,
+  }, wrap(async ({ ore_settimanali, monte_ore, percentuale_limite }) => {
+    const today = todayRome();
+    const c = getClient();
+    const [abs, les, cal] = await Promise.all([
+      c.student<{ events: any[] }>("absences/details"),
+      c.student<{ lessons: any[] }>(`lessons/${toApi(schoolYearStart(today))}/${toApi(today)}`).catch(() => ({ lessons: [] as any[] })),
+      c.student<{ calendar: any[] }>("calendar/all").catch(() => ({ calendar: [] as any[] })),
+    ]);
+    const r = computeAttendance(abs.events ?? [], les.lessons ?? [], cal.calendar ?? [], {
+      today,
+      oreSettimanali: ore_settimanali ?? defaults.oreSettimanali,
+      monteOre: monte_ore ?? defaults.monteOre,
+      percentuale: percentuale_limite ?? defaults.percentuale,
+    });
+    return {
+      ...r,
+      note: [
+        "Stima basata sul registro: ore di un giorno di assenza = ore di lezione registrate quel giorno (o l'orario tipico di quel giorno della settimana).",
+        "Ritardi e uscite contano le ore indicate dal registro; quelli senza ore indicate sono in ore_assenza_max (fino a 1 ora ciascuno). I ritardi brevi non sono contati.",
+        "Le deroghe al limite (motivi di salute, sport agonistico, ecc.) sono decise dal consiglio di classe.",
+      ],
     };
   }));
 

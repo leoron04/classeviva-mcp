@@ -39,7 +39,7 @@ Preferisci la tua istanza? Vai a [Self-hosting](#self-hosting).
 
 ---
 
-## Funzionalità (13 tool, sola lettura)
+## Funzionalità (14 tool, sola lettura)
 
 | | Tool | Cosa fa |
 |---|---|---|
@@ -49,6 +49,7 @@ Preferisci la tua istanza? Vai a [Self-hosting](#self-hosting).
 | 📝 | `get_homework` | Compiti assegnati dai docenti, per data di consegna, filtrabili per materia |
 | 📖 | `get_lessons` | Argomenti delle lezioni (default: ultimi 7 giorni) |
 | 🚪 | `get_absences` | Assenze, ritardi, uscite + quante da giustificare |
+| ⏱️ | `get_absence_hours` | Ore di assenza vs limite annuale (25% del monte ore = ore settimanali × 33, stimate dal registro o indicate), ore ancora disponibili, proiezione a fine anno. Predefiniti opzionali: var `ORE_SETTIMANALI`, `MONTE_ORE_ANNUO`, `LIMITE_ASSENZE_PERCENT` |
 | 📢 | `get_noticeboard` | Circolari della bacheca con gli allegati (**non** le segna come lette) |
 | 📝 | `get_notes` | Note disciplinari, annotazioni, richiami, sanzioni |
 | 📚 | `get_subjects` | Materie e docenti |
@@ -158,7 +159,8 @@ src/worker.ts       OAuthProvider (/authorize, /token, /register, /mcp)
 src/authorize.ts    login: CSRF, rate limit, verifica Spaggiari, grant
 src/pages.ts        HTML (login, home, errori)
 src/mcp.ts          server MCP (Streamable HTTP, stateless)
-src/tools.ts        i 13 tool
+src/tools.ts        i 14 tool
+src/attendance.ts   conteggio ore di assenza vs limite (get_absence_hours)
 src/files.ts        get_file: download, PDF (unpdf), docx/pptx/odt, testo
 src/classeviva.ts   client API + rinnovo sessione
 src/clients.ts      cache in-memory delle sessioni
@@ -199,7 +201,7 @@ Segnalazioni di sicurezza: vedi [SECURITY.md](SECURITY.md). Contributi: [CONTRIB
 
 ## English
 
-**ClasseViva MCP** is an unofficial, open-source remote MCP server that connects the Italian school e-register **ClasseViva (Spaggiari)** to **Claude** (and other OAuth-capable MCP clients). Multi-user: each person signs in with their own credentials on an OAuth 2.1 (PKCE + dynamic client registration) login page. Credentials are **never stored in plaintext** — only inside the grant props, encrypted by `@cloudflare/workers-oauth-provider`. All **13 tools are read-only** (grades with averages, agenda, homework, lessons, absences, noticeboard, notes, subjects, periods, teaching materials, calendar, plus `get_file`, which reads attached files from Didattica, noticeboard and homework: PDF page by page, .docx, .pptx, OpenDocument and plain text; links are returned as URLs).
+**ClasseViva MCP** is an unofficial, open-source remote MCP server that connects the Italian school e-register **ClasseViva (Spaggiari)** to **Claude** (and other OAuth-capable MCP clients). Multi-user: each person signs in with their own credentials on an OAuth 2.1 (PKCE + dynamic client registration) login page. Credentials are **never stored in plaintext** — only inside the grant props, encrypted by `@cloudflare/workers-oauth-provider`. All **14 tools are read-only** (grades with averages, agenda, homework, lessons, absences (plus absence hours vs the 25% yearly limit), noticeboard, notes, subjects, periods, teaching materials, calendar, plus `get_file`, which reads attached files from Didattica, noticeboard and homework: PDF page by page, .docx, .pptx, OpenDocument and plain text; links are returned as URLs).
 
 - **Quick start in Claude:** Settings → Connectors → Add custom connector → URL `https://classeviva-mcp.ronchfx.workers.dev/mcp`.
 - **Self-host:** free Cloudflare Workers plan — create `OAUTH_KV`, set `SUBJECT_KEY`, `wrangler deploy` (see above).

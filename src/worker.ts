@@ -14,7 +14,10 @@ const mcpApi = {
     // ALLOWED_USERS vale anche per i token già emessi (es. se l'elenco cambia dopo il login)
     if (!userAllowed(env, p.u)) return Response.json({ error: "access_denied", error_description: "utente non ammesso su questa istanza" }, { status: 403 });
     const client = await clientFor({ user: p.u, pass: p.p, ident: p.i, baseUrl: env.CLASSEVIVA_BASE_URL || undefined });
-    return handleMcp(req, () => client);
+    const num = (v?: string) => (v && Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : undefined);
+    return handleMcp(req, () => client, {
+      oreSettimanali: num(env.ORE_SETTIMANALI), monteOre: num(env.MONTE_ORE_ANNUO), percentuale: num(env.LIMITE_ASSENZE_PERCENT),
+    });
   },
 };
 
